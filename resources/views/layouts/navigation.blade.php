@@ -58,7 +58,7 @@
                                     <h3 class="font-bold text-gray-900 mb-3 border-b pb-2">VIỆC LÀM</h3>
                                     <ul class="space-y-3">
                                         <li><a href="#" class="text-gray-600 hover:text-indigo-600">Việc làm mới nhất</a></li>
-                                        <li><a href="#" class="text-gray-600 hover:text-indigo-600">Việc làm theo ngành nghề</a></li>
+                                        <li><a href="{{ route('jobs.index')}}" class="text-gray-600 hover:text-indigo-600">Việc làm theo ngành nghề</a></li>
                                     </ul>
                                 </div>
                                 {{-- Cột 2: Công Ty --}}
@@ -186,7 +186,7 @@
                 {{-- Nội dung dropdown mobile --}}
                 <div x-show="mobileMenuOpen" class="mt-2 space-y-1 ps-8" style="display: none;">
                     <x-responsive-nav-link href="#">Việc làm mới nhất</x-responsive-nav-link>
-                    <x-responsive-nav-link href="#">Việc làm theo ngành nghề</x-responsive-nav-link>
+                    <x-responsive-nav-link href="{{ route('jobs.index')}}">Việc làm theo ngành nghề</x-responsive-nav-link>
                     <x-responsive-nav-link href="{{ route('companies.index') }}">Danh sách công ty</x-responsive-nav-link>
                     <x-responsive-nav-link href="#">Doanh nghiệp yêu thích</x-responsive-nav-link>
                 </div>

@@ -1,116 +1,155 @@
 <?php
 
+// Import các Controller chung
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Auth\AdminLoginController;
-use App\Http\Controllers\Auth\TuyenDungLoginController;
-use App\Http\Controllers\Auth\TuyenDungRegisterController;
 use App\Http\Controllers\UserDashboardController;
+use App\Http\Controllers\JobSearchController;
+
+// Import các Controller của Admin
+use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Admin\BenefitController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\ProvinceController;
 use App\Http\Controllers\Admin\WardController;
 use App\Http\Controllers\Admin\ProfessionController;
+
+// Import các Controller của Nhà Tuyển Dụng
+use App\Http\Controllers\Auth\TuyenDungLoginController;
+use App\Http\Controllers\Auth\TuyenDungRegisterController;
 use App\Http\Controllers\Employers\PostController;
-use App\Http\Controllers\Employers\EmployerProfileController; // <-- ĐÃ THÊM
+use App\Http\Controllers\Employers\EmployerProfileController;
+
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
+|
+| File này điều hướng 3 luồng chính:
+| 1. Ứng viên (guard: 'web')
+| 2. Admin (guard: 'admin')
+| 3. Nhà tuyển dụng (guard: 'tuyen_dung')
+|
 */
 
-// === ỨNG VIÊN (USER_UNG_VIEN) ===
+// ===================================================================
+// == PHÂN HỆ 1: ỨNG VIÊN (USER_UNG_VIEN) - GUARD 'web'
+// ===================================================================
 
-// Rule 1: Trang chủ (/) vào /dashboard (công khai)
+// Yêu cầu: Trang chủ (/) mặc định vào /dashboard (công khai)
 Route::get('/', function () {
     return redirect('/dashboard');
 });
 
-// Rule 1: Trang /dashboard (công khai)
+// Trang /dashboard (công khai) - Sử dụng Controller mới
 Route::get('dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
 
-// Trang /cong-ty (công khai)
+// Trang danh sách TẤT CẢ công ty (công khai)
 Route::get('cong-ty', [UserDashboardController::class, 'allCompanies'])->name('companies.index');
 
-// Các route xác thực của 'web' (login, register, v.v...)
+// Trang TÌM VIỆC LÀM (công khai)
+Route::get('viec-lam-theo-nganh-nghe', [JobSearchController::class, 'index'])->name('jobs.index');
+
+
+// Các route của Breeze (login, register, logout...)
+// Được bảo vệ bởi 'guest' (khách) hoặc 'auth' (đã đăng nhập)
 require __DIR__.'/auth.php';
 
-// Các trang được bảo vệ của 'web' (ung_vien)
+// Các trang được bảo vệ của 'ung_vien' (phải đăng nhập 'web')
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Route cho /profile (của ung_vien)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// ===================================================================
+// == PHÂN HỆ 2: ADMIN (USER_ADMIN) - GUARD 'admin'
+// ===================================================================
 
-// === ADMIN (USER_ADMIN) ===
-
-// Rule 3: Trang /admin được bảo vệ
+// Nhóm này yêu cầu phải đăng nhập với guard 'admin'
 Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
+
+    // Trang /admin (dashboard)
     Route::get('/', function () {
         return view('admin.dashboard');
     })->name('dashboard');
 
-    Route::post('logout', [AdminLoginController::class, 'destroy'])->name('logout');
+    // Xử lý đăng xuất Admin
+    Route::post('logout', [AdminLoginController::class, 'destroy'])
+                ->name('logout');
 
-    // CRUDs
+    // CRUD: Phúc lợi
     Route::resource('benefits', BenefitController::class)->except(['show', 'destroy']);
+    
+    // CRUD: Địa chỉ (Locations)
     Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
     Route::resource('provinces', ProvinceController::class)->except(['index', 'show', 'destroy']);
     Route::resource('wards', WardController::class)->except(['index', 'show', 'destroy']);
+    
+    // CRUD: Ngành nghề
     Route::resource('professions', ProfessionController::class)->except(['show', 'destroy']);
+
 });
 
-// Trang login admin (chỉ cho khách)
+// Các route đăng nhập Admin (chỉ dành cho khách 'guest:admin')
 Route::prefix('admin')->name('admin.')->middleware('guest:admin')->group(function () {
-    Route::get('login', [AdminLoginController::class, 'create'])->name('login');
+    Route::get('login', [AdminLoginController::class, 'create'])
+                ->name('login');
     Route::post('login', [AdminLoginController::class, 'store']);
 });
 
 
-// === NHÀ TUYỂN DỤNG (USER_TUYEN_DUNG) ===
+// ===================================================================
+// == PHÂN HỆ 3: NHÀ TUYỂN DỤNG (USER_TUYEN_DUNG) - GUARD 'tuyen_dung'
+// ===================================================================
 
-// Rule 2: Trang /employers (chuyển hướng)
+// Yêu cầu: /employers là trang công khai, bỏ qua đăng nhập
 Route::get('employers', function () {
+    // Tự động chuyển hướng /employers -> /employers/dashboard
     return redirect()->route('employers.dashboard');
 })->name('employers.index');
 
-// Rule 2: Trang /employers/dashboard (công khai)
+// Trang /employers/dashboard (công khai)
 Route::get('employers/dashboard', function () {
-    // Nếu đã đăng nhập, hiển thị dashboard
-    // if (Auth::guard('tuyen_dung')->check()) {
-    //     return view('employers.dashboard');
-    // }
-    // // Nếu chưa, chuyển đến trang login
-    // return redirect()->route('employers.login');
-
     return view('employers.dashboard');
-
 })->name('employers.dashboard');
 
 
-// Trang login/register nhà tuyển dụng (chỉ cho khách)
+// Nhóm đăng nhập/đăng ký (chỉ dành cho khách 'guest:tuyen_dung')
 Route::prefix('employers')->name('employers.')->middleware('guest:tuyen_dung')->group(function () {
-    Route::get('login', [TuyenDungLoginController::class, 'create'])->name('login');
+    // Trang đăng nhập
+    Route::get('login', [TuyenDungLoginController::class, 'create'])
+                ->name('login');
     Route::post('login', [TuyenDungLoginController::class, 'store']);
-    Route::get('register', [TuyenDungRegisterController::class, 'create'])->name('register');
+    
+    // Trang đăng ký
+    Route::get('register', [TuyenDungRegisterController::class, 'create'])
+                ->name('register');
     Route::post('register', [TuyenDungRegisterController::class, 'store']);
 });
 
-// Các trang được bảo vệ của 'tuyen_dung'
+// Nhóm các trang được bảo vệ của 'tuyen_dung' (phải đăng nhập 'tuyen_dung')
 Route::prefix('employers')->name('employers.')->middleware('auth:tuyen_dung')->group(function () {
-    Route::post('logout', [TuyenDungLoginController::class, 'destroy'])->name('logout');
     
-    // CRUD Tin đăng
-    Route::resource('posts', PostController::class);
+    // Xử lý đăng xuất
+    Route::post('logout', [TuyenDungLoginController::class, 'destroy'])
+                ->name('logout');
 
-    // (CÁC ROUTE MỚI CHO PROFILE ĐÃ ĐƯỢC THÊM VÀO ĐÂY)
+    // CRUD: Quản lý Tin đăng (Posts)
+    Route::resource('posts', PostController::class)
+         ->except(['show']); // Bỏ trang 'show'
+
+    // Cập nhật Hồ sơ (Profile)
     Route::get('profile', [EmployerProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [EmployerProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/logo', [EmployerProfileController::class, 'updateLogo'])->name('profile.updateLogo');
-    
 });
 
-// === API Routes (cho AJAX) ===
+
+// ===================================================================
+// == API (Dùng cho AJAX)
+// ===================================================================
+// API lấy danh sách Phường/Xã (dùng cho cả Ứng viên và Nhà Tuyển Dụng)
 Route::get('/api/wards/{province}', [TuyenDungRegisterController::class, 'getWards']);
