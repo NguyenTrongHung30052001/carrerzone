@@ -1,0 +1,49 @@
+/* Phần này là bắt buộc để Tailwind hoạt động. 
+  Nó đã có sẵn trong file của bạn.
+*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* TÙY CHỈNH THANH CUỘN (SCROLLBAR)
+  Thêm các style này vào file của bạn
+*/
+@layer base {
+    /* Styling cho Firefox (chuẩn CSS mới)
+       Chúng ta sẽ làm nó mỏng (thin) và đổi màu (màu thumb, màu track)
+    */
+    html {
+        scrollbar-width: thin;
+        scrollbar-color: #4f46e5 #f1f5f9; /* Indigo-600 / Gray-100 */
+    }
+
+    /* Styling cho các trình duyệt Webkit (Chrome, Safari, Edge)
+       Chúng ta sẽ làm nó mỏng, màu xám nhạt, và thanh cuộn màu indigo
+    */
+
+    /* Toàn bộ thanh cuộn */
+    ::-webkit-scrollbar {
+        width: 10px;  /* Độ rộng thanh cuộn */
+        height: 10px; /* Chiều cao (cho thanh cuộn ngang) */
+    }
+
+    /* Phần rãnh (track) - nền của thanh cuộn */
+    ::-webkit-scrollbar-track {
+        background: #f1f5f9; /* Màu xám nhạt (Tailwind gray-100) */
+        border-radius: 10px;
+    }
+
+    /* Phần con trượt (thumb) - thanh cuộn di chuyển */
+    ::-webkit-scrollbar-thumb {
+        background-color: #4f46e5; /* Màu Indigo-600 (màu chủ đạo) */
+        border-radius: 10px;
+        /* Tạo viền 2px giống rãnh (cho đẹp mắt) */
+        border: 2px solid #f1f5f9; 
+    }
+
+    /* Khi rê chuột vào con trượt */
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: #4338ca; /* Màu Indigo-700 (đậm hơn) */
+    }
+}
