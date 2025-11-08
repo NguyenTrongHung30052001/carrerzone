@@ -25,40 +25,39 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| File này điều hướng 3 luồng chính:
-| 1. Ứng viên (guard: 'web')
-| 2. Admin (guard: 'admin')
-| 3. Nhà tuyển dụng (guard: 'tuyen_dung')
-|
 */
 
 // ===================================================================
 // == PHÂN HỆ 1: ỨNG VIÊN (USER_UNG_VIEN) - GUARD 'web'
 // ===================================================================
 
-// Yêu cầu: Trang chủ (/) mặc định vào /dashboard (công khai)
+// Trang chủ (/) mặc định vào /dashboard
 Route::get('/', function () {
     return redirect('/dashboard');
 });
 
-// Trang /dashboard (công khai) - Sử dụng Controller mới
+// Trang /dashboard (công khai)
 Route::get('dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
 
 // Trang danh sách TẤT CẢ công ty (công khai)
 Route::get('cong-ty', [UserDashboardController::class, 'allCompanies'])->name('companies.index');
 
-// Trang TÌM VIỆC LÀM (công khai)
+// Trang TÌM VIỆC LÀM theo ngành nghề (công khai)
 Route::get('viec-lam-theo-nganh-nghe', [JobSearchController::class, 'index'])->name('jobs.index');
+
+// Trang DANH SÁCH VIỆC LÀM theo ngành nghề cụ thể (dùng slug)
+Route::get('viec-lam/{slug}', [JobSearchController::class, 'showByProfession'])
+     ->name('jobs.showByProfession');
+
+// [QUAN TRỌNG] Trang CHI TIẾT VIỆC LÀM (Link từ card việc làm)
+Route::get('tim-viec-lam/{slug}.{id}.html', [JobSearchController::class, 'show'])->name('jobs.show');
 
 
 // Các route của Breeze (login, register, logout...)
-// Được bảo vệ bởi 'guest' (khách) hoặc 'auth' (đã đăng nhập)
 require __DIR__.'/auth.php';
 
-// Các trang được bảo vệ của 'ung_vien' (phải đăng nhập 'web')
+// Các trang được bảo vệ của 'ung_vien'
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Route cho /profile (của ung_vien)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -68,88 +67,62 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // == PHÂN HỆ 2: ADMIN (USER_ADMIN) - GUARD 'admin'
 // ===================================================================
 
-// Nhóm này yêu cầu phải đăng nhập với guard 'admin'
+// Nhóm được bảo vệ (cần đăng nhập admin)
 Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
-
-    // Trang /admin (dashboard)
     Route::get('/', function () {
         return view('admin.dashboard');
     })->name('dashboard');
 
-    // Xử lý đăng xuất Admin
-    Route::post('logout', [AdminLoginController::class, 'destroy'])
-                ->name('logout');
+    Route::post('logout', [AdminLoginController::class, 'destroy'])->name('logout');
 
-    // CRUD: Phúc lợi
+    // Resources
     Route::resource('benefits', BenefitController::class)->except(['show', 'destroy']);
-    
-    // CRUD: Địa chỉ (Locations)
     Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
     Route::resource('provinces', ProvinceController::class)->except(['index', 'show', 'destroy']);
     Route::resource('wards', WardController::class)->except(['index', 'show', 'destroy']);
-    
-    // CRUD: Ngành nghề
     Route::resource('professions', ProfessionController::class)->except(['show', 'destroy']);
-
 });
 
-// Các route đăng nhập Admin (chỉ dành cho khách 'guest:admin')
+// Nhóm khách (chưa đăng nhập admin)
 Route::prefix('admin')->name('admin.')->middleware('guest:admin')->group(function () {
-    Route::get('login', [AdminLoginController::class, 'create'])
-                ->name('login');
+    Route::get('login', [AdminLoginController::class, 'create'])->name('login');
     Route::post('login', [AdminLoginController::class, 'store']);
 });
-
 
 // ===================================================================
 // == PHÂN HỆ 3: NHÀ TUYỂN DỤNG (USER_TUYEN_DUNG) - GUARD 'tuyen_dung'
 // ===================================================================
 
-// Yêu cầu: /employers là trang công khai, bỏ qua đăng nhập
+// Trang chủ employers -> chuyển hướng vào dashboard
 Route::get('employers', function () {
-    // Tự động chuyển hướng /employers -> /employers/dashboard
     return redirect()->route('employers.dashboard');
 })->name('employers.index');
 
-// Trang /employers/dashboard (công khai)
+// Dashboard (công khai theo yêu cầu)
 Route::get('employers/dashboard', function () {
     return view('employers.dashboard');
 })->name('employers.dashboard');
 
-
-// Nhóm đăng nhập/đăng ký (chỉ dành cho khách 'guest:tuyen_dung')
+// Nhóm khách (chưa đăng nhập)
 Route::prefix('employers')->name('employers.')->middleware('guest:tuyen_dung')->group(function () {
-    // Trang đăng nhập
-    Route::get('login', [TuyenDungLoginController::class, 'create'])
-                ->name('login');
+    Route::get('login', [TuyenDungLoginController::class, 'create'])->name('login');
     Route::post('login', [TuyenDungLoginController::class, 'store']);
-    
-    // Trang đăng ký
-    Route::get('register', [TuyenDungRegisterController::class, 'create'])
-                ->name('register');
+    Route::get('register', [TuyenDungRegisterController::class, 'create'])->name('register');
     Route::post('register', [TuyenDungRegisterController::class, 'store']);
 });
 
-// Nhóm các trang được bảo vệ của 'tuyen_dung' (phải đăng nhập 'tuyen_dung')
+// Nhóm được bảo vệ (cần đăng nhập tuyen_dung)
 Route::prefix('employers')->name('employers.')->middleware('auth:tuyen_dung')->group(function () {
+    Route::post('logout', [TuyenDungLoginController::class, 'destroy'])->name('logout');
     
-    // Xử lý đăng xuất
-    Route::post('logout', [TuyenDungLoginController::class, 'destroy'])
-                ->name('logout');
-
-    // CRUD: Quản lý Tin đăng (Posts)
-    Route::resource('posts', PostController::class)
-         ->except(['show']); // Bỏ trang 'show'
-
-    // Cập nhật Hồ sơ (Profile)
+    Route::resource('posts', PostController::class)->except(['show']);
+    
     Route::get('profile', [EmployerProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [EmployerProfileController::class, 'update'])->name('profile.update');
     Route::put('profile/logo', [EmployerProfileController::class, 'updateLogo'])->name('profile.updateLogo');
 });
 
-
 // ===================================================================
-// == API (Dùng cho AJAX)
+// == API (AJAX)
 // ===================================================================
-// API lấy danh sách Phường/Xã (dùng cho cả Ứng viên và Nhà Tuyển Dụng)
 Route::get('/api/wards/{province}', [TuyenDungRegisterController::class, 'getWards']);

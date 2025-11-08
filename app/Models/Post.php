@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 class Post extends Model
 {
@@ -16,41 +15,44 @@ class Post extends Model
     protected $fillable = [
         'user_tuyen_dung_id',
         'chuc_danh',
-        'profession_id',
-        'province_id',
-        'ward_id',
-        'dia_chi_lam_viec',
+        'profession_id', // ID Ngành nghề
+        'province_id',   // ID Tỉnh/Thành làm việc
+        'ward_id',       // ID Xã/Phường làm việc
+        'dia_chi_lam_viec',       // Địa chỉ cụ thể nơi làm việc
         'mo_ta_cong_viec',
         'yeu_cau_cong_viec',
-        'luong_currency',
-        'luong_min',
-        'luong_max',
-        'hien_thi_luong',
-        'hinh_thuc_lam_viec',
+        'luong_currency', // Loại tiền tệ (VND, USD)
+        'luong_from',     // Lương từ
+        'luong_to',       // Lương đến
+        'luong_hien_thi', // Có hiển thị lương không (boolean)
+        'hinh_thuc',      // Hình thức làm việc (JSON array)
         'han_chot_nop_ho_so',
         'yeu_cau_thu_gioi_thieu',
-        'ngon_ngu_ho_so',
+        'ngon_ngu_ho_so', // Ngôn ngữ hồ sơ (JSON array)
         'gioi_tinh',
-        'tuoi_min',
-        'tuoi_max',
+        'tuoi_from',      // Tuổi từ
+        'tuoi_to',        // Tuổi đến
         'kinh_nghiem',
         'cap_bac',
         'bang_cap',
-        'ten_cong_ty',
-        'dia_chi_cong_ty',
-        'ten_nguoi_lien_he',
-        'email_lien_he',
+        'ten_cong_ty',      // Tên công ty (lưu cứng tại thời điểm đăng)
+        'dia_chi_cong_ty',  // Địa chỉ công ty (lưu cứng)
+        'nguoi_lien_he',    // Người liên hệ (lưu cứng)
+        'email_lien_he',    // Email liên hệ (lưu cứng)
         'thong_tin_khac',
+        // Các cột bổ sung để hiển thị nhanh
+        'province_name',
+        'ward_name',
     ];
 
     /**
-     * Chuyển kiểu dữ liệu tự động.
-     * Rất quan trọng cho các cột 'json' (chọn nhiều).
+     * Định kiểu dữ liệu cho các cột.
      */
     protected $casts = [
-        'hinh_thuc_lam_viec' => 'json',
-        'ngon_ngu_ho_so' => 'json',
+        'hinh_thuc' => 'array',        // Tự động chuyển JSON sang mảng PHP
+        'ngon_ngu_ho_so' => 'array',   // Tự động chuyển JSON sang mảng PHP
         'han_chot_nop_ho_so' => 'date',
+        'luong_hien_thi' => 'boolean',
     ];
 
     /*
@@ -60,52 +62,34 @@ class Post extends Model
     */
 
     /**
-     * Lấy nhà tuyển dụng (chủ sở hữu) của tin đăng này.
+     * Tin đăng thuộc về một Nhà tuyển dụng.
      */
-    public function userTuyenDung()
+    public function employer()
     {
         return $this->belongsTo(UserTuyenDung::class, 'user_tuyen_dung_id');
     }
 
     /**
-     * Lấy ngành nghề của tin đăng này.
+     * Tin đăng thuộc về một Ngành nghề.
      */
     public function profession()
     {
-        return $this->belongsTo(Profession::class, 'profession_id');
+        return $this->belongsTo(Profession::class);
     }
 
     /**
-     * Lấy tỉnh/thành phố của nơi làm việc.
+     * Tin đăng thuộc về một Tỉnh/Thành phố (nơi làm việc).
      */
     public function province()
     {
-        return $this->belongsTo(Province::class, 'province_id');
+        return $this->belongsTo(Province::class);
     }
 
     /**
-     * Lấy xã/phường của nơi làm việc.
+     * Tin đăng thuộc về một Xã/Phường (nơi làm việc).
      */
     public function ward()
     {
-        return $this->belongsTo(Ward::class, 'ward_id');
-    }
-
-    /**
-     * Tự động gán user_tuyen_dung_id khi tạo mới.
-     * (Sử dụng 'boot' method)
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Tự động gán ID của nhà tuyển dụng đang đăng nhập
-        // khi một tin đăng mới được 'creating' (đang tạo).
-        static::creating(function ($post) {
-            // Đảm bảo chỉ gán nếu user là 'tuyen_dung' và đã đăng nhập
-            if (Auth::guard('tuyen_dung')->check()) {
-                $post->user_tuyen_dung_id = Auth::guard('tuyen_dung')->id();
-            }
-        });
+        return $this->belongsTo(Ward::class);
     }
 }

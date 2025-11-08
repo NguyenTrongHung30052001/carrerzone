@@ -19,22 +19,9 @@
                     @if ($categories->isEmpty())
                         <p class="text-center text-gray-500">Chưa có ngành nghề nào được hiển thị.</p>
                     @else
-                        {{-- 
-                            THAY ĐỔI LỚN:
-                            - Đổi từ "grid" sang "columns" (Tailwind CSS multi-column)
-                            - "gap-x-6" để giữ khoảng cách giữa các cột
-                            - Bỏ "gap-y-8" vì các mục sẽ tự chảy
-                        --}}
                         <div class="columns-1 md:columns-2 lg:columns-4 gap-x-6">
                             
                             @foreach ($categories as $category)
-                                {{-- 
-                                    THAY ĐỔI LỚN:
-                                    1. Thêm "break-inside-avoid": Ngăn không cho 
-                                       một danh mục bị vỡ làm đôi giữa 2 cột.
-                                    2. Thêm "mb-6": Tạo khoảng cách giữa các danh mục 
-                                       khi chúng xếp chồng lên nhau trong cùng một cột.
-                                --}}
                                 <div class="space-y-2 break-inside-avoid mb-6"> 
                                     
                                     {{-- Danh mục cha (Đã xóa href) --}}
@@ -46,13 +33,20 @@
                                     <ul class="space-y-2">
                                         @foreach ($category->children as $child)
                                             <li class="flex justify-between items-start space-x-2">
-                                                <a href="" class="text-gray-600 hover:text-indigo-600" title="{{ $child->ten_nganh_nghe }}">
+                                                {{-- 
+                                                    ĐÃ SỬA:
+                                                    - Dùng cú pháp mảng ['slug' => $child->slug]
+                                                    - Thêm kiểm tra ($child->slug) để tránh lỗi nếu slug = null
+                                                --}}
+                                                <a href="{{ $child->slug ? route('jobs.showByProfession', ['slug' => $child->slug]) : '#' }}" 
+                                                   class="text-gray-600 hover:text-indigo-600" 
+                                                   title="{{ $child->ten_nganh_nghe }}">
                                                     {{ $child->ten_nganh_nghe }}
                                                 </a>
                                                 
-                                                <a  class="text-sm font-medium text-[#00b2a3] flex-shrink-0">
-                                                    {{ $child->posts_count }}
-                                                </a>
+                                                <span class="text-sm font-medium text-[#00b2a3] flex-shrink-0">
+                                                    ({{ $child->posts_count }})
+                                                </span>
                                             </li>
                                         @endforeach
                                     </ul>
